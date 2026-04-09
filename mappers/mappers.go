@@ -32,11 +32,11 @@ func MapToUserDTO(user entities.User) dtos.UserDTO {
 }
 
 func MapToUserDTOList(users []entities.User) []dtos.UserDTO {
-	var userDTOs []dtos.UserDTO
+	var userDtoList []dtos.UserDTO
 	for i := 0; i < len(users); i++ {
 		var userDTO dtos.UserDTO
 		userDTO = MapToUserDTO(users[i])
-		userDTOs = append(userDTOs, userDTO)
+		userDtoList = append(userDtoList, userDTO)
 	}
-	return userDTOs
+	return userDtoList
 }

@@ -23,7 +23,32 @@ func main() {
 			json.NewDecoder(r.Body).Decode(&user)
 			db.AddUser(user)
 		} else if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode(mappers.MapToUserDTOList(db.GetUser()))
+			idUser := r.URL.Query().Get("id")
+			if idUser != "" {
+				id, err := strconv.Atoi(idUser)
+				if err != nil {
+					log.Fatal(err)
+				}
+				json.NewEncoder(w).Encode(mappers.MapToUserDTO(db.GetUser(int64(id))))
+			} else {
+				err := json.NewEncoder(w).Encode(mappers.MapToUserDTOList(db.GetAllUsers()))
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+
+		} else if r.Method == http.MethodDelete {
+			idUser := r.URL.Query().Get("id")
+			id, err := strconv.Atoi(idUser)
+			if err != nil {
+				log.Fatal(err)
+			}
+			db.RemoveUser(int64(id))
+
+		} else if r.Method == http.MethodPut {
+			var user entities.User
+			json.NewDecoder(r.Body).Decode(&user)
+			db.UpdateUser(user)
 		}
 	})
 
@@ -36,7 +61,7 @@ func main() {
 					return
 				}
 				json.NewEncoder(w).Encode(mappers.MapToDTO(db.GetItems(int64(id))))
-			} else if idStr == "" {
+			} else {
 				json.NewEncoder(w).Encode(mappers.MapToDTOList(db.GetAllItems()))
 			}
 		} else if r.Method == http.MethodPost {
@@ -65,5 +90,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }

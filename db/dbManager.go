@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"module3Bit/entities"
 )
@@ -86,11 +87,21 @@ func AddUser(user entities.User) {
 	}
 }
 
-func GetUser() []entities.User {
+func GetUser(id int64) entities.User {
+	var user entities.User
+	rows := db.QueryRow("select * from users where id = $1", id)
+	errFindUser := rows.Scan(&user.ID, &user.Email, &user.Password)
+	if errFindUser != nil {
+		return entities.User{}
+	}
+	return user
+}
+
+func GetAllUsers() []entities.User {
 	var users []entities.User
 	rows, err := db.Query("select * from users")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Ошибка", err)
 	}
 
 	for rows.Next() {
@@ -99,4 +110,18 @@ func GetUser() []entities.User {
 		users = append(users, user)
 	}
 	return users
+}
+
+func RemoveUser(id int64) {
+	_, err := db.Exec("delete from users where id = $1", id)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func UpdateUser(user entities.User) {
+	_, err := db.Exec("update users set email = $1, password = $2 where id = $3", user.Email, user.Password, user.ID)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
