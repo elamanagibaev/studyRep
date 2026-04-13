@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"log"
 	"module3Bit/entities"
-	"module3Bit/mappers"
 	"module3Bit/repositories"
+	"module3Bit/services"
 	"net/http"
 	"strconv"
 
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 )
 
@@ -49,11 +48,16 @@ func main() {
 	userRepo := repositories.NewUserRepository(db)
 	userRepository = userRepo
 
+	var userService services.UserService
+	userServ := services.NewUserService(userRepository)
+	userService = userServ
+
 	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			var user entities.User
 			json.NewDecoder(r.Body).Decode(&user)
-			userRepository.AddUser(user)
+			userService.AddUserService(user) // обращение через сервисы = handler -> service -> repo
+
 		} else if r.Method == http.MethodGet {
 			idUser := r.URL.Query().Get("id")
 			if idUser != "" {
@@ -61,9 +65,9 @@ func main() {
 				if err != nil {
 					fmt.Println("Null")
 				}
-				json.NewEncoder(w).Encode(mappers.MapToUserDTO(userRepository.GetUser(int64(id))))
+				json.NewEncoder(w).Encode(userService.GetUserService(int64(id)))
 			} else {
-				err := json.NewEncoder(w).Encode(mappers.MapToUserDTOList(userRepository.GetAllUsers()))
+				err := json.NewEncoder(w).Encode(userService.GetAllUsersService())
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -75,17 +79,22 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			userRepository.RemoveUser(int64(id))
+			userService.RemoveUserService(int64(id))
+
 		} else if r.Method == http.MethodPut {
 			var user entities.User
 			json.NewDecoder(r.Body).Decode(&user)
-			userRepository.UpdateUser(user)
+			userService.UpdateUserService(user)
 		}
 	})
 
 	var itemRepository repositories.ItemRepository // экземпляр интерфейса
 	itemRepo := repositories.NewItemRepository(db) // экземпляр структуры
 	itemRepository = itemRepo                      // полимормфизм
+
+	var itemService services.ItemService
+	itemServ := services.NewItemService(itemRepository)
+	itemService = itemServ
 
 	http.HandleFunc("/items", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
@@ -95,26 +104,27 @@ func main() {
 				if err != nil {
 					return
 				}
-				json.NewEncoder(w).Encode(mappers.MapToDTO(itemRepository.GetItemByID(int64(id))))
+				json.NewEncoder(w).Encode(itemService.GetItemByIDService(int64(id))) // обращение через сервисы = handler -> service -> repo
 			} else {
-				json.NewEncoder(w).Encode(mappers.MapToDTOList(itemRepository.GetAllItems()))
+				json.NewEncoder(w).Encode(itemService.GetAllItemsService()) // обращение через сервисы = handler -> service -> repo
 			}
 		} else if r.Method == http.MethodPost {
 			var item entities.Item
 			json.NewDecoder(r.Body).Decode(&item)
-			item.Promo = uuid.New().String()
-			itemRepository.AddItem(item)
+			itemService.AddItemService(item) // обращение через сервисы = handler -> service -> repo
+
 		} else if r.Method == http.MethodPut {
 			var updItem entities.Item
 			json.NewDecoder(r.Body).Decode(&updItem)
-			itemRepository.UpdateItem(updItem)
+			itemService.UpdateItemService(updItem) // обращение через сервисы = handler -> service -> repo
+
 		} else if r.Method == http.MethodDelete {
 			idStr := r.URL.Query().Get("id")
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
 				log.Fatal(err)
 			}
-			itemRepository.DeleteItem(int64(id))
+			itemService.DeleteItemService(int64(id)) // обращение через сервисы = handler -> service -> repo
 		}
 	})
 
