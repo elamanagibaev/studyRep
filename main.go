@@ -8,6 +8,9 @@ import (
 	"module3Bit/services"
 	"net/http"
 
+	"github.com/gorilla/mux"
+	_ "github.com/gorilla/mux"
+
 	_ "github.com/lib/pq"
 )
 
@@ -40,6 +43,7 @@ func CloseDB() {
 func main() {
 	InitDB()
 	defer CloseDB()
+	router := mux.NewRouter()
 
 	var userRepository repositories.UserRepository
 	userRepo := repositories.NewUserRepository(db)
@@ -53,7 +57,10 @@ func main() {
 	userHandle := handlers.NewUserHandler(userService)
 	userHandler = userHandle
 
-	http.HandleFunc("/users", userHandler.HandleRequest)
+	router.HandleFunc("/users", userHandler.HandleRequestGet).Methods("GET")
+	router.HandleFunc("/users", userHandler.HandleRequestPost).Methods("POST")
+	router.HandleFunc("/users", userHandler.HandleRequestPut).Methods("PUT")
+	router.HandleFunc("/users", userHandler.HandleRequestDelete).Methods("DELETE")
 
 	var itemRepository repositories.ItemRepository // экземпляр интерфейса
 	itemRepo := repositories.NewItemRepository(db) // экземпляр структуры
@@ -67,10 +74,14 @@ func main() {
 	itemHandle := handlers.NewItemHandler(itemService)
 	itemHandler = itemHandle
 
-	http.HandleFunc("/items", itemHandler.HandleRequest)
+	router.HandleFunc("/items", itemHandler.HandleRequestGet).Methods("GET")
+	router.HandleFunc("/items", itemHandler.HandleRequestPost).Methods("POST")
+	router.HandleFunc("/items", itemHandler.HandleRequestPut).Methods("PUT")
+	router.HandleFunc("/items", itemHandler.HandleRequestDelete).Methods("DELETE")
 
 	server := http.Server{
-		Addr: "localhost:4040",
+		Addr:    "localhost:4040",
+		Handler: router,
 	}
 	err := server.ListenAndServe()
 	if err != nil {
