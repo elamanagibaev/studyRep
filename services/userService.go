@@ -36,7 +36,7 @@ func (userService *userService) GetAllUsersService() []dtos.UserDTO {
 }
 
 func (userService *userService) RemoveUserService(id int64) {
-	userService.userRepository.RemoveUser(int64(id))
+	userService.userRepository.RemoveUser(id)
 }
 
 func (userService *userService) UpdateUserService(user entities.User) {
