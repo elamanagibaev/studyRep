@@ -1,10 +1,10 @@
 package services
 
 import (
-	"module3Bit/dtos"
-	"module3Bit/entities"
-	"module3Bit/mappers"
-	"module3Bit/repositories"
+	"module3Bit/internal/dtos"
+	"module3Bit/internal/entities"
+	"module3Bit/internal/mappers"
+	"module3Bit/internal/repositories"
 
 	"github.com/google/uuid"
 )

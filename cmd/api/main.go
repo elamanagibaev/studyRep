@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"log"
-	"module3Bit/handlers"
-	"module3Bit/repositories"
-	"module3Bit/services"
+	handlers2 "module3Bit/internal/handlers"
+	repositories2 "module3Bit/internal/repositories"
+	services2 "module3Bit/internal/services"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -45,16 +45,16 @@ func main() {
 	defer CloseDB()
 	router := mux.NewRouter()
 
-	var userRepository repositories.UserRepository
-	userRepo := repositories.NewUserRepository(db)
+	var userRepository repositories2.UserRepository
+	userRepo := repositories2.NewUserRepository(db)
 	userRepository = userRepo
 
-	var userService services.UserService
-	userServ := services.NewUserService(userRepository)
+	var userService services2.UserService
+	userServ := services2.NewUserService(userRepository)
 	userService = userServ
 
-	var userHandler handlers.UserHandler
-	userHandle := handlers.NewUserHandler(userService)
+	var userHandler handlers2.UserHandler
+	userHandle := handlers2.NewUserHandler(userService)
 	userHandler = userHandle
 
 	router.HandleFunc("/users", userHandler.HandleRequestGet).Methods("GET")
@@ -62,16 +62,16 @@ func main() {
 	router.HandleFunc("/users", userHandler.HandleRequestPut).Methods("PUT")
 	router.HandleFunc("/users", userHandler.HandleRequestDelete).Methods("DELETE")
 
-	var itemRepository repositories.ItemRepository // экземпляр интерфейса
-	itemRepo := repositories.NewItemRepository(db) // экземпляр структуры
-	itemRepository = itemRepo                      // полимормфизм
+	var itemRepository repositories2.ItemRepository // экземпляр интерфейса
+	itemRepo := repositories2.NewItemRepository(db) // экземпляр структуры
+	itemRepository = itemRepo                       // полимормфизм
 
-	var itemService services.ItemService
-	itemServ := services.NewItemService(itemRepository)
+	var itemService services2.ItemService
+	itemServ := services2.NewItemService(itemRepository)
 	itemService = itemServ
 
-	var itemHandler handlers.ItemHandler
-	itemHandle := handlers.NewItemHandler(itemService)
+	var itemHandler handlers2.ItemHandler
+	itemHandle := handlers2.NewItemHandler(itemService)
 	itemHandler = itemHandle
 
 	router.HandleFunc("/items", itemHandler.HandleRequestGet).Methods("GET")

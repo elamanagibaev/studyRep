@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"module3Bit/entities"
+	"module3Bit/internal/entities"
 )
 
 type UserRepository interface {

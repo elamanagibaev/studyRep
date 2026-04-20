@@ -3,7 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"log"
-	"module3Bit/entities"
+	"module3Bit/internal/entities"
 )
 
 type ItemRepository interface {
@@ -42,7 +42,6 @@ func (itemRepository *itemRepository) GetItemByIDRepository(id int64) entities.I
 	row := itemRepository.db.QueryRow("select * from items where id = $1", id)
 	err := row.Scan(&item.ID, &item.Name, &item.Price, &item.Amount, &item.Promo)
 	if err != nil {
-		log.Fatal(err)
 		return entities.Item{}
 	}
 	return item

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"module3Bit/entities"
-	"module3Bit/services"
+	"module3Bit/internal/entities"
+	"module3Bit/internal/services"
 	"net/http"
 	"strconv"
 )

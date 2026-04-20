@@ -2,9 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
-	"module3Bit/entities"
-	"module3Bit/services"
+	"module3Bit/internal/entities"
+	"module3Bit/internal/services"
 	"net/http"
 	"strconv"
 )
@@ -53,7 +52,8 @@ func (itemHandler *itemHandler) HandleRequestDelete(w http.ResponseWriter, r *ht
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
 	}
 	itemHandler.itemService.DeleteItemService(int64(id)) // обращение через сервисы = handler -> service -> repo
 }

@@ -1,8 +1,8 @@
 package mappers
 
 import (
-	"module3Bit/dtos"
-	"module3Bit/entities"
+	"module3Bit/internal/dtos"
+	"module3Bit/internal/entities"
 )
 
 func MapToDTO(item entities.Item) dtos.ItemDTO {
