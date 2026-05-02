@@ -52,8 +52,7 @@ func (itemHandler *itemHandler) HandleRequestDelete(w http.ResponseWriter, r *ht
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
+		panic(err)
 	}
 	itemHandler.itemService.DeleteItemService(int64(id)) // обращение через сервисы = handler -> service -> repo
 }

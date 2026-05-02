@@ -2,9 +2,11 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"module3Bit/internal/entities"
+	"module3Bit/pkg/errorsCustom"
 )
 
 type UserRepository interface {
@@ -13,6 +15,7 @@ type UserRepository interface {
 	GetAllUsers() []entities.User
 	RemoveUser(id int64)
 	UpdateUser(user entities.User)
+	GetUserByEmail(email string) (entities.User, error)
 }
 
 type userRepository struct {
@@ -67,4 +70,21 @@ func (userRepository *userRepository) UpdateUser(user entities.User) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (userRepository *userRepository) GetUserByEmail(email string) (entities.User, error) {
+	var user entities.User
+	row := userRepository.db.QueryRow("SELECT * FROM users WHERE email = $1", email)
+	err := row.Scan(&user.ID, &user.Email, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entities.User{}, errorsCustom.NotFoundError{
+				ID:       email,
+				Resource: "user",
+			}
+		} else {
+			return entities.User{}, fmt.Errorf("user's scanning err: %w", err)
+		}
+	}
+	return user, nil
 }

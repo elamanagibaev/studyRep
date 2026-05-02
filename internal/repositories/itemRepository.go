@@ -57,7 +57,8 @@ func (itemRepository *itemRepository) AddItemRepository(item entities.Item) {
 func (itemRepository *itemRepository) UpdateItemRepository(item entities.Item) {
 	_, err := itemRepository.db.Exec("update items set name = $1, price = $2, amount = $3, promo = $4 where id = $5", item.Name, item.Price, item.Amount, item.Promo, item.ID)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Неверные данные")
+		return
 	}
 }
 
