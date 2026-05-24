@@ -9,6 +9,7 @@ import (
 
 type AuthService interface {
 	AuthUser(user entities.User) error
+	Register(user entities.User) error
 }
 
 type authService struct {
@@ -33,6 +34,18 @@ func (authService *authService) AuthUser(user entities.User) error {
 		return errorsCustom.UnauthorizedError{
 			Reason: "Invalid email or password",
 		}
+	}
+	return nil
+}
+
+func (authService *authService) Register(user entities.User) error {
+	_, err := authService.userRepository.GetUserByEmail(user.Email)
+	if err == nil {
+		return errors.New("user already register")
+	}
+	err = authService.userRepository.AddUser(user)
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -5,10 +5,9 @@ import (
 	"errors"
 	"module3Bit/internal/entities"
 	"module3Bit/internal/services"
+	"module3Bit/internal/utils"
 	"module3Bit/pkg/errorsCustom"
 	"net/http"
-
-	"github.com/gorilla/sessions"
 )
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -19,15 +18,15 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 
 type AuthHandler interface {
 	BasicAuth(w http.ResponseWriter, r *http.Request)
+	Register(w http.ResponseWriter, r *http.Request)
 }
 
 type authHandler struct {
 	authService services.AuthService
-	store       *sessions.CookieStore
 }
 
-func NewAuthHandler(authService services.AuthService, store *sessions.CookieStore) AuthHandler {
-	return &authHandler{authService: authService, store: store}
+func NewAuthHandler(authService services.AuthService) AuthHandler {
+	return &authHandler{authService: authService}
 }
 
 func (h authHandler) BasicAuth(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +39,7 @@ func (h authHandler) BasicAuth(w http.ResponseWriter, r *http.Request) {
 	user.Email = email
 	user.Password = password
 	err := h.authService.AuthUser(user)
+
 	if err != nil {
 		var unAuthErr errorsCustom.UnauthorizedError
 		if errors.As(err, &unAuthErr) {
@@ -50,17 +50,29 @@ func (h authHandler) BasicAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := h.store.Get(r, "session-name")
-	session.Values["authenticated"] = true
-	session.Values["email"] = user.Email
-
-	err = session.Save(r, w)
+	token, err := utils.GenerateJwtToken(email)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "session error",
+			"error": "token generate error",
 		})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Success Auth"})
+	writeJSON(w, http.StatusOK, map[string]string{"token": token})
+}
+
+func (h *authHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var user entities.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Bad Request"})
+		return
+	}
+
+	err = h.authService.Register(user)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Register failed"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"message": "register success"})
 }

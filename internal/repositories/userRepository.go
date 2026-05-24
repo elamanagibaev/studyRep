@@ -10,7 +10,7 @@ import (
 )
 
 type UserRepository interface {
-	AddUser(user entities.User)
+	AddUser(user entities.User) error
 	GetUser(id int64) entities.User
 	GetAllUsers() []entities.User
 	RemoveUser(id int64)
@@ -26,11 +26,12 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (userRepository *userRepository) AddUser(user entities.User) {
+func (userRepository *userRepository) AddUser(user entities.User) error {
 	_, err := userRepository.db.Exec("insert into users(email, password) values ($1, $2)", user.Email, user.Password)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Error at inserting to DB")
 	}
+	return nil
 }
 
 func (userRepository *userRepository) GetUser(id int64) entities.User {

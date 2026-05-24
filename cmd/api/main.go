@@ -6,12 +6,13 @@ import (
 	handlers2 "module3Bit/internal/handlers"
 	repositories2 "module3Bit/internal/repositories"
 	services2 "module3Bit/internal/services"
+	"module3Bit/internal/utils"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	_ "github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 )
 
@@ -63,35 +64,31 @@ func RecoveryDBMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleware(store *sessions.CookieStore) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			session, _ := store.Get(r, "session-name")
-			auth, ok := session.Values["authenticated"].(bool)
-			if !auth || !ok {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"error" : "Unauthorized"`))
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
+func JWTMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jwtHeader := r.Header.Get("Authorization")
+		if jwtHeader != "" {
+			http.Error(w, "missing token", http.StatusUnauthorized)
+			return
+		}
+
+		tokenStr := strings.TrimPrefix(jwtHeader, "Bearer ")
+		token, err := utils.VerifyJwtToken(tokenStr)
+		if err != nil || !token.Valid {
+			http.Error(w, "invalid or expired token", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
 	InitDB()
 	defer CloseDB()
 
-	store := sessions.NewCookieStore([]byte("super-secret-key"))
-	store.Options = &sessions.Options{
-		Path:     "/",  // Просто "/" для всех эндпоинтов
-		MaxAge:   3600, // MaxAge в секундах в Gorilla
-		HttpOnly: true,
-	}
-
 	router := mux.NewRouter()
-	itemRouter := router.PathPrefix("items").Subrouter()
-	itemRouter.Use(AuthMiddleware(store))
+	itemRouter := router.PathPrefix("/items").Subrouter()
+	itemRouter.Use(JWTMiddleware)
 
 	var userRepository repositories2.UserRepository
 	userRepo := repositories2.NewUserRepository(db)
@@ -110,7 +107,7 @@ func main() {
 	authService = authServ
 
 	var authHandler handlers2.AuthHandler
-	authHand := handlers2.NewAuthHandler(authService, store)
+	authHand := handlers2.NewAuthHandler(authService)
 	authHandler = authHand
 
 	router.HandleFunc("/users", userHandler.HandleRequestGet).Methods("GET")
@@ -118,7 +115,9 @@ func main() {
 	router.HandleFunc("/users", userHandler.HandleRequestPut).Methods("PUT")
 	router.HandleFunc("/users", userHandler.HandleRequestDelete).Methods("DELETE")
 
-	router.HandleFunc("/auth", authHandler.BasicAuth).Methods("GET")
+	authRouter := router.PathPrefix("/auth").Subrouter()
+	authRouter.HandleFunc("/login", authHandler.BasicAuth).Methods("POST")
+	authRouter.HandleFunc("/register", authHandler.Register).Methods("POST")
 
 	var itemRepository repositories2.ItemRepository // экземпляр интерфейса
 	itemRepo := repositories2.NewItemRepository(db) // экземпляр структуры
@@ -132,10 +131,10 @@ func main() {
 	itemHandle := handlers2.NewItemHandler(itemService)
 	itemHandler = itemHandle
 
-	itemRouter.HandleFunc("/items", itemHandler.HandleRequestGet).Methods("GET")
-	itemRouter.HandleFunc("/items", itemHandler.HandleRequestPost).Methods("POST")
-	itemRouter.HandleFunc("/items", itemHandler.HandleRequestPut).Methods("PUT")
-	itemRouter.HandleFunc("/items", itemHandler.HandleRequestDelete).Methods("DELETE")
+	itemRouter.HandleFunc("", itemHandler.HandleRequestGet).Methods("GET")
+	itemRouter.HandleFunc("", itemHandler.HandleRequestPost).Methods("POST")
+	itemRouter.HandleFunc("", itemHandler.HandleRequestPut).Methods("PUT")
+	itemRouter.HandleFunc("", itemHandler.HandleRequestDelete).Methods("DELETE")
 
 	middleware := RecoveryDBMiddleware(router) // сначала обработаем соединение с БД
 	middleware = LoggingMiddleware(middleware) // после перезаписывание при логирование
